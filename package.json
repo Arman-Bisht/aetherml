@@ -1,0 +1,25 @@
+{
+  "name": "aetherml",
+  "version": "1.0.0",
+  "description": "AI-Native Language for SEO",
+  "type": "module",
+  "main": "bin/aetherml.js",
+  "bin": {
+    "aetherml": "./bin/aetherml.js"
+  },
+  "scripts": {
+    "test": "node test.js",
+    "build": "node bin/aetherml.js examples/simple-page.aether"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.111.0",
+    "@google/generative-ai": "^0.24.1",
+    "chalk": "^5.6.2",
+    "commander": "^15.0.0",
+    "dotenv": "^17.4.2",
+    "figlet": "^1.11.2",
+    "inquirer": "^14.0.2",
+    "openai": "^6.46.0",
+    "ora": "^9.4.1"
+  }
+}

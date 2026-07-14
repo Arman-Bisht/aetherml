@@ -1,0 +1,15 @@
+$page[intent:"ecommerce"]
+
+$sec:hero [
+  img: "hero-lcp.jpg",
+  h1: "AetherML CLI Launch , 
+  $btn[label:"Get Started Now"
+]
+
+$sec:hero [
+  h1: "Second section header (SEO will demote this)"
+]
+
+$plugin:chart[type:"bar", labels:"Downloads|Stars|Forks", data:"500|150|42"]
+
+$plugin:3d[model:"logo", spin:"true"]

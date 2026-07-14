@@ -1,0 +1,34 @@
+name: AetherML CI Gatekeeper
+
+on:
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test:
+    name: Core Engine Tests
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install Dependencies
+      run: npm ci
+
+    - name: Run Core Tests (Lexer, Parser, Transformer)
+      run: npm test
+
+    - name: Eject Compatibility Check
+      run: |
+        node bin/aetherml.js eject test_enterprise.aether
+        if [ ! -d "extracted_app" ]; then
+          echo "Eject failed! extracted_app directory was not created."
+          exit 1
+        fi

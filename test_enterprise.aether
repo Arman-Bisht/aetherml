@@ -1,0 +1,8 @@
+$page[intent:"saas", theme:"dark",
+  $anim:gsap[trigger:"load", effect:"fadeUp", 
+    $sec:hero[h1:"Build Faster", subtitle:"AI-Powered AetherML Enterprise Compiler", $btn[label:"Login to Buy", action:"$auth:supabase"]]
+  ],
+  $anim:gsap[trigger:"scroll", effect:"stagger",
+    $sec:pricing[tiers:"1", highlight:"pro", $btn[label:"Buy Now", action:"$pay:razorpay[amount:'999']"]]
+  ]
+]

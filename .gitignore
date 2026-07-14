@@ -1,0 +1,16 @@
+# Dependencies
+node_modules/
+# Environment Variables & Config
+.env
+.env.local
+aetherml.config.json
+
+# Build Outputs & Temporary Files
+dist_app/
+extracted_app/
+temp.aether
+*.log
+
+# OS Files
+.DS_Store
+Thumbs.db
