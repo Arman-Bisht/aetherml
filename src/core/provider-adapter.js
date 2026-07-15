@@ -8,7 +8,7 @@ import path from 'path';
  * Enterprise Provider Adapter
  * Routes requests to the configured AI backend based on aetherml.config.json
  */
-export async function generateAetherML(prompt) {
+export async function generateAetherML(prompt, themePath = null) {
     const configPath = path.resolve('aetherml.config.json');
     if (!fs.existsSync(configPath)) {
         throw new Error('aetherml.config.json not found. Please run "aetherml init" first.');
@@ -31,6 +31,14 @@ For actions, use $auth:supabase or $pay:razorpay[amount:'999'].
 Always nest components correctly inside $page.
 ONLY OUTPUT THE RAW DSL STRING. NO EXPLANATIONS. NO MARKDOWN BLOCK FORMATTING.`;
 
+    let themeInstruction = '';
+    if (themePath && fs.existsSync(themePath)) {
+        const themeContent = fs.readFileSync(path.resolve(themePath), 'utf-8');
+        themeInstruction = `\n\nDESIGN SYSTEM THEME:\n${themeContent}\n\nCRITICAL HALLUCINATION GUARDRAIL:\nYou are strictly forbidden from using any colors not defined in the provided JSON theme above. If a requested UI element does not have a defined color, default to the 'primary' color from the theme. Do not invent HEX codes.`;
+    }
+
+    const finalSystemPrompt = systemPrompt + themeInstruction;
+
     try {
         switch (provider) {
             case 'NIM':
@@ -41,7 +49,7 @@ ONLY OUTPUT THE RAW DSL STRING. NO EXPLANATIONS. NO MARKDOWN BLOCK FORMATTING.`;
                 });
                 const chatCompletion = await client.chat.completions.create({
                     model: model,
-                    messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: prompt }]
+                    messages: [{ role: 'system', content: finalSystemPrompt }, { role: 'user', content: prompt }]
                 });
                 return chatCompletion.choices[0].message.content;
 
@@ -50,7 +58,7 @@ ONLY OUTPUT THE RAW DSL STRING. NO EXPLANATIONS. NO MARKDOWN BLOCK FORMATTING.`;
                 const message = await anthropic.messages.create({
                     model: model,
                     max_tokens: 1024,
-                    system: systemPrompt,
+                    system: finalSystemPrompt,
                     messages: [{ role: 'user', content: prompt }]
                 });
                 return message.content[0].text;
@@ -59,7 +67,7 @@ ONLY OUTPUT THE RAW DSL STRING. NO EXPLANATIONS. NO MARKDOWN BLOCK FORMATTING.`;
                 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || 'missing');
                 const geminiModel = genAI.getGenerativeModel({ 
                     model: model,
-                    systemInstruction: { parts: [{ text: systemPrompt }] }
+                    systemInstruction: { parts: [{ text: finalSystemPrompt }] }
                 });
                 const result = await geminiModel.generateContent(prompt);
                 return result.response.text();

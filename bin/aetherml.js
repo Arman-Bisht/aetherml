@@ -3,6 +3,7 @@
 import fs from 'fs';
 import path from 'path';
 import { spawn } from 'child_process';
+import crypto from 'crypto';
 import { Command } from 'commander';
 import inquirer from 'inquirer';
 import chalk from 'chalk';
@@ -23,6 +24,17 @@ function showWelcome() {
     console.log(`${chalk.bold('AetherML Enterprise Engine')} ${chalk.dim('v2.0.0')}`);
     console.log(`${chalk.blue('Status:')} ${chalk.green('Compiler Online')}`);
     console.log(chalk.white('====================================================\n'));
+}
+
+function writeFileIfChanged(fullPath, content) {
+    if (fs.existsSync(fullPath)) {
+        const existing = fs.readFileSync(fullPath, 'utf-8');
+        if (existing === content) return false;
+    }
+    const dir = path.dirname(fullPath);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(fullPath, content, 'utf-8');
+    return true;
 }
 
 const program = new Command();
@@ -73,11 +85,12 @@ program
 program
     .command('generate <prompt>')
     .description('Generate AetherML DSL from natural language using the configured provider')
-    .action(async (prompt) => {
+    .option('--theme <file>', 'Path to a JSON design system theme file')
+    .action(async (prompt, options) => {
         showWelcome();
         const spinner = ora('Contacting AI Provider...').start();
         try {
-            const dsl = await generateAetherML(prompt);
+            const dsl = await generateAetherML(prompt, options.theme);
             const outputPath = path.resolve('temp.aether');
             fs.writeFileSync(outputPath, dsl);
             spinner.succeed(chalk.green(`DSL Generated successfully: ${outputPath}`));
@@ -137,7 +150,7 @@ program
             spinner.text = 'Transforming to React Components...';
             await new Promise(r => setTimeout(r, 400));
             
-            const { jsxString, integrations } = transform(ast);
+            const { jsxString, integrations } = await transform(ast);
 
             spinner.text = 'Generating Virtual Filesystem...';
             await new Promise(r => setTimeout(r, 400));
@@ -146,14 +159,13 @@ program
             const outputPath = path.resolve(options.output);
             if (!fs.existsSync(outputPath)) fs.mkdirSync(outputPath, { recursive: true });
 
+            let updatedFilesCount = 0;
             for (const [relativePath, content] of Object.entries(files)) {
                 const fullPath = path.join(outputPath, relativePath);
-                const dir = path.dirname(fullPath);
-                if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-                fs.writeFileSync(fullPath, content, 'utf-8');
+                if (writeFileIfChanged(fullPath, content)) updatedFilesCount++;
             }
 
-            spinner.succeed(chalk.green(`Pipeline Complete! Compiled to ${options.output}/`));
+            spinner.succeed(chalk.green(`Pipeline Complete! Compiled to ${options.output}/ (${updatedFilesCount} files updated)`));
             
             // Print SEO Report
             console.log(chalk.dim('\n--- SEO Guardrail Report ---'));
@@ -181,20 +193,19 @@ program
             const source = fs.readFileSync(inputPath, 'utf-8');
             const tokens = tokenize(source);
             const ast = parse(tokens);
-            const { jsxString, integrations } = transform(ast);
+            const { jsxString, integrations } = await transform(ast);
             const files = generateNextJsApp(jsxString, integrations, ast);
             
             const outputPath = path.resolve(options.output);
             if (!fs.existsSync(outputPath)) fs.mkdirSync(outputPath, { recursive: true });
 
+            let updatedFilesCount = 0;
             for (const [relativePath, content] of Object.entries(files)) {
                 const fullPath = path.join(outputPath, relativePath);
-                const dir = path.dirname(fullPath);
-                if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-                fs.writeFileSync(fullPath, content, 'utf-8');
+                if (writeFileIfChanged(fullPath, content)) updatedFilesCount++;
             }
             
-            spinner.succeed(chalk.green(`Project ejected successfully to /${options.output}`));
+            spinner.succeed(chalk.green(`Project ejected successfully to /${options.output} (${updatedFilesCount} files written)`));
         } catch (error) {
             spinner.fail(chalk.red('Ejection failed: ' + error.message));
             process.exit(1);
@@ -219,27 +230,50 @@ program
             const source = fs.readFileSync(inputPath, 'utf-8');
             const tokens = tokenize(source);
             const ast = parse(tokens);
-            const { jsxString, integrations } = transform(ast);
+            const { jsxString, integrations } = await transform(ast);
             const files = generateNextJsApp(jsxString, integrations, ast);
             
             if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
 
+            let updatedFilesCount = 0;
             for (const [relativePath, content] of Object.entries(files)) {
                 const fullPath = path.join(outputDir, relativePath);
-                const dir = path.dirname(fullPath);
-                if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-                fs.writeFileSync(fullPath, content, 'utf-8');
+                if (writeFileIfChanged(fullPath, content)) updatedFilesCount++;
             }
-            spinner.succeed(chalk.green('Compiled successfully.'));
+            spinner.succeed(chalk.green(`Compiled successfully. (${updatedFilesCount} files updated)`));
         } catch (error) {
             spinner.fail(chalk.red('Compilation failed: ' + error.message));
             process.exit(1);
         }
 
+        const packageJsonPath = path.join(outputDir, 'package.json');
+        const packageJsonContent = fs.readFileSync(packageJsonPath, 'utf-8');
+        const currentHash = crypto.createHash('md5').update(packageJsonContent).digest('hex');
+        const cachePath = path.resolve('.aether_cache');
+        
+        let previousHash = '';
+        if (fs.existsSync(cachePath)) {
+            previousHash = fs.readFileSync(cachePath, 'utf-8');
+        }
+        
+        const nodeModulesPath = path.join(outputDir, 'node_modules');
+        const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+        
+        if (currentHash === previousHash && fs.existsSync(nodeModulesPath)) {
+            console.log(chalk.green('✔ Dependencies unchanged. Skipping npm install (Incremental Cache hit).'));
+            console.log(chalk.cyan('\n🚀 Starting Next.js development server...\n'));
+            const devProc = spawn(npmCmd, ['run', 'dev'], { cwd: outputDir, stdio: 'inherit', shell: true });
+            devProc.on('error', (err) => {
+                console.error(chalk.red('Failed to start dev server: ' + err.message));
+            });
+            return;
+        }
+        
+        fs.writeFileSync(cachePath, currentHash, 'utf-8');
+
         const installSpinner = ora('Installing NPM dependencies (this may take a minute)...').start();
         
         // Run npm install
-        const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
         
         const installProc = spawn(npmCmd, ['install'], { cwd: outputDir, stdio: 'ignore', shell: true });
         

@@ -26,7 +26,7 @@ console.log("AST parsed successfully.");
 
 console.log("\n=========================================");
 console.log("=== PHASE 2: TRANSFORMER ===");
-const transformerOutput = transform(ast);
+const transformerOutput = await transform(ast);
 console.log("Intermediate output generated with Plugins:", transformerOutput.activePlugins);
 
 console.log("\n=========================================");

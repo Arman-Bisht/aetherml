@@ -1,12 +1,13 @@
 import { escapeHtml } from '../utils/escapeHtml.js';
 import { renderHeroJSX } from '../plugins/components/hero.js';
 
-export function transform(ast) {
+export async function transform(ast) {
   let integrations = new Set();
 
-  function walk(node) {
+  async function walk(node) {
     if (node.type === 'Program') {
-      return node.body.map(walk).join('\n');
+      const results = await Promise.allSettled(node.body.map(walk));
+      return results.filter(r => r.status === 'fulfilled').map(r => r.value).join('\n');
     }
     
     if (node.type === 'Component') {
@@ -15,7 +16,8 @@ export function transform(ast) {
       
       const rawTag = `$${compType}${compName && compName !== compType ? ':'+compName : ''}`;
 
-      let childrenJSX = node.children.map(walk).join('\n');
+      const childResults = await Promise.allSettled(node.children.map(walk));
+      let childrenJSX = childResults.filter(r => r.status === 'fulfilled').map(r => r.value).join('\n');
 
       const propsObj = Object.create(null);
       let rawPropsList = [];
@@ -94,7 +96,7 @@ export function transform(ast) {
     return '';
   }
 
-  const jsxString = walk(ast);
+  const jsxString = await walk(ast);
 
   return { jsxString, integrations };
 }
