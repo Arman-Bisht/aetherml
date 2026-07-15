@@ -28,7 +28,7 @@ export async function transform(ast) {
       });
       
       let rawPropsString = rawPropsList.length > 0 ? `[${rawPropsList.join(', ')}]` : '';
-      const sourceMap = `\n{/* AetherML Line ${node.line || '?'}: Generated from ${rawTag}${rawPropsString} */}\n`;
+      const sourceMap = `\n{/* AetherML Line ${node.line || '?'}: Generated from ${escapeHtml(rawTag)}${escapeHtml(rawPropsString)} */}\n`;
 
       if (compType === 'anim' && compName === 'gsap') {
         integrations.add('gsap');

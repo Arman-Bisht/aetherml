@@ -8,7 +8,7 @@
     "aetherml": "./bin/aetherml.js"
   },
   "scripts": {
-    "test": "node test.js",
+    "test": "node --test tests/compiler.test.js",
     "build": "node bin/aetherml.js examples/simple-page.aether"
   },
   "dependencies": {
