@@ -7,7 +7,7 @@
 
 **AetherML** is an open-source, AI-Native DSL (Domain Specific Language) compiler. It compresses complex Next.js React code down to an extremely dense string, allowing AI models (like Gemini, Claude, and OpenAI) to generate full-stack, animated web applications at a fraction of the token cost.
 
-Based on our [OpenAI BPE Token Benchmark](./benchmarks/token-ratio.js), AetherML achieves a token compression ratio ranging from **5.9x (simple landing pages)** up to **24.5x (complex auth flows)** depending on page complexity.
+Based on our [OpenAI BPE Token Benchmark](./benchmarks/token-ratio.js), AetherML achieves a token compression ratio ranging from **3.7x (simple landing pages)** up to **23.0x (complex data dashboards)** depending on page complexity.
 
 Instead of paying an LLM to generate 450 tokens of React boilerplate, you pay it to generate 18 tokens of AetherML. The local AetherML compiler then natively expands it into a production-grade **Next.js App Router** architecture on your machine.
 
