@@ -10,6 +10,11 @@ import chalk from 'chalk';
 import figlet from 'figlet';
 import ora from 'ora';
 import 'dotenv/config';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf-8'));
+const CLI_VERSION = pkg.version;
 
 import { tokenize } from '../src/core/lexer.js';
 import { parse } from '../src/core/parser.js';
@@ -21,7 +26,7 @@ import { generateAetherML, validateCredentials } from '../src/core/provider-adap
 function showWelcome() {
     console.log(chalk.cyan(figlet.textSync('AetherML', { font: 'Slant' })));
     console.log(chalk.white('===================================================='));
-    console.log(`${chalk.bold('AetherML Enterprise Engine')} ${chalk.dim('v2.0.0')}`);
+    console.log(`${chalk.bold('AetherML Enterprise Engine')} ${chalk.dim('v' + CLI_VERSION)}`);
     console.log(`${chalk.blue('Status:')} ${chalk.green('Compiler Online')}`);
     console.log(chalk.white('====================================================\n'));
 }
@@ -42,7 +47,7 @@ const program = new Command();
 program
     .name('aetherml')
     .description('AI-Native Enterprise Compiler')
-    .version('2.0.0');
+    .version(CLI_VERSION, '-v, --version', 'Output the current version');
 
 program
     .command('init')
