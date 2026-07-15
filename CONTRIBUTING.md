@@ -4,11 +4,13 @@ First off, thank you for considering contributing to AetherML! Our goal is to cr
 
 The most common way to contribute is by adding new **Plugins** and **Integrations** to the language!
 
-## How the Plugin Architecture Works
+## The Plugin Trust Model
 
-AetherML uses a decoupled string-template architecture. Whenever the compiler reads a tag like `$auth:supabase`, it doesn't need to know how Supabase works. It simply asks the Plugin Bridge if a Supabase template exists.
+AetherML uses a strictly vetted, decoupled string-template architecture. To prevent supply-chain attacks, **AetherML does not support dynamic, unverified third-party plugins at runtime.**
 
-If you want to add support for a new library (e.g., Firebase, Three.js, Stripe, Framer Motion), you do not need to modify the core Lexer or Parser.
+Whenever the compiler reads a tag like `$auth:supabase`, it doesn't need to know how Supabase works. It simply asks the internal Plugin Bridge if a verified Supabase template exists.
+
+If you want to add support for a new library, you must submit it as a Pull Request to be audited and merged by the core team.
 
 ### Step 1: Create a Plugin File
 Navigate to `src/plugins/integrations/` (for backend services) or `src/plugins/libraries/` (for frontend libraries) and create a new Javascript file. 

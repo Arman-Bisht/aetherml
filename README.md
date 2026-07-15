@@ -5,9 +5,11 @@
 ![NPM Version](https://img.shields.io/npm/v/aetherml)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
-**AetherML** is an open-source, AI-Native DSL (Domain Specific Language) compiler. It compresses complex Next.js React code down to an extremely dense string, allowing AI models (like Gemini, Claude, and OpenAI) to generate full-stack, animated web applications at 30x the speed and a fraction of the token cost.
+**AetherML** is an open-source, AI-Native DSL (Domain Specific Language) compiler. It compresses complex Next.js React code down to an extremely dense string, allowing AI models (like Gemini, Claude, and OpenAI) to generate full-stack, animated web applications at a fraction of the token cost.
 
-Instead of paying an LLM to generate 1,500 tokens of React boilerplate, you pay it to generate 80 tokens of AetherML. The local AetherML compiler then natively expands it into a production-grade **Next.js App Router** architecture on your machine.
+Based on our [OpenAI BPE Token Benchmark](./benchmarks/token-ratio.js), AetherML achieves a token compression ratio ranging from **5.9x (simple landing pages)** up to **24.5x (complex auth flows)**.
+
+Instead of paying an LLM to generate 450 tokens of React boilerplate, you pay it to generate 18 tokens of AetherML. The local AetherML compiler then natively expands it into a production-grade **Next.js App Router** architecture on your machine.
 
 ---
 
@@ -37,6 +39,9 @@ Compile the AetherML file, automatically install NPM dependencies, and launch a 
 ```bash
 aetherml dev temp.aether
 ```
+
+> [!WARNING]
+> The `dist_app` directory is ephemeral. Running `dev` or `build` again will **overwrite your manual changes**. If you want to hand-tweak the generated Next.js code, you MUST run `aetherml eject` to safely detach your codebase.
 
 ---
 

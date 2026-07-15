@@ -24,8 +24,9 @@ Before code generation, the AST is passed through the SEO Guardrails.
 *   **Validator:** Scans for missing `<h1>` tags or missing page intents. If `--strict` mode is enabled, it fatally crashes the build here to protect Search Engine rankings.
 *   **Engine:** Automatically generates Schema.org JSON-LD structured data based on the page intent (e.g., generating `SoftwareApplication` schema for SaaS pages).
 
-### 5. The Plugin Bridge (`src/plugins/`)
-A decoupled architecture where third-party integrations (like Razorpay, Supabase, GSAP) are completely separated from the core compiler. When the Transformer detects a plugin tag (e.g., `$pay:razorpay`), it invokes the Bridge to pull the specific template and register its required NPM packages.
+### 5. The Plugin Trust Model & Bridge (`src/plugins/`)
+A decoupled architecture where third-party integrations (like Razorpay, Supabase, GSAP) are completely separated from the core compiler. 
+**Enterprise Trust Model:** AetherML does **not** dynamically load unverified NPM packages at runtime. All plugins must be submitted as Pull Requests and manually audited by the core team before being merged. When the Transformer detects a vetted plugin tag (e.g., `$pay:razorpay`), it invokes the Bridge to pull the specific template and register its required NPM packages.
 
 ### 6. The Generator (`src/core/enterprise-generator.js`)
 The final stage. The Generator takes the transformed React components, the SEO metadata, and the Plugin requirements, and scaffolds a pure Next.js 14 App Router application inside the `dist_app/` directory. It dynamically builds the `package.json`, runs `npm install`, and can optionally boot `next dev`.
