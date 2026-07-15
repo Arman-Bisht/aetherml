@@ -29,7 +29,8 @@ async function runEval() {
     const providers = [
         { name: 'Gemini (gemini-1.5-flash)', key: process.env.GEMINI_API_KEY },
         { name: 'Claude (claude-3-haiku-20240307)', key: process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY },
-        { name: 'OpenAI (gpt-3.5-turbo)', key: process.env.OPENAI_API_KEY }
+        { name: 'OpenAI (gpt-3.5-turbo)', key: process.env.OPENAI_API_KEY },
+        { name: 'NVIDIA NIM (meta/llama3-70b-instruct)', key: process.env.NIM_API_KEY }
     ];
 
     for (const p of providers) {
@@ -48,7 +49,7 @@ async function runEval() {
                 
                 if (p.name.includes('Gemini')) {
                     const genAI = new GoogleGenerativeAI(p.key);
-                    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro', systemInstruction: { parts: [{ text: systemPrompt }] } });
+                    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash', systemInstruction: { parts: [{ text: systemPrompt }] } });
                     const result = await model.generateContent(testPrompt);
                     dslString = result.response.text();
                 } else if (p.name.includes('Claude')) {
@@ -58,6 +59,10 @@ async function runEval() {
                 } else if (p.name.includes('OpenAI')) {
                     const openai = new OpenAI({ apiKey: p.key });
                     const res = await openai.chat.completions.create({ model: 'gpt-3.5-turbo', messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: testPrompt }] });
+                    dslString = res.choices[0].message.content;
+                } else if (p.name.includes('NIM')) {
+                    const openai = new OpenAI({ apiKey: p.key, baseURL: 'https://integrate.api.nvidia.com/v1' });
+                    const res = await openai.chat.completions.create({ model: 'meta/llama3-70b-instruct', messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: testPrompt }] });
                     dslString = res.choices[0].message.content;
                 }
 
