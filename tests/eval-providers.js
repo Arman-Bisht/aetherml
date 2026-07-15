@@ -30,7 +30,8 @@ async function runEval() {
         { name: 'Gemini (gemini-3.5-flash)', key: process.env.GEMINI_API_KEY },
         { name: 'Claude (claude-3-haiku-20240307)', key: process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY },
         { name: 'OpenAI (gpt-3.5-turbo)', key: process.env.OPENAI_API_KEY },
-        { name: 'NVIDIA NIM (nemotron-3-ultra-550b)', key: process.env.NIM_API_KEY }
+        { name: 'NVIDIA NIM (nemotron-3-ultra-550b)', key: process.env.NIM_API_KEY },
+        { name: 'Groq (llama-3.3-70b-versatile)', key: process.env.GROQ_API_KEY }
     ];
 
     for (const p of providers) {
@@ -63,6 +64,10 @@ async function runEval() {
                 } else if (p.name.includes('NIM')) {
                     const openai = new OpenAI({ apiKey: p.key, baseURL: process.env.NIM_BASE_URL || 'https://integrate.api.nvidia.com/v1' });
                     const res = await openai.chat.completions.create({ model: process.env.NIM_MODEL || 'nvidia/nemotron-3-ultra-550b-a55b', messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: testPrompt }] });
+                    dslString = res.choices[0].message.content;
+                } else if (p.name.includes('Groq')) {
+                    const openai = new OpenAI({ apiKey: p.key, baseURL: 'https://api.groq.com/openai/v1' });
+                    const res = await openai.chat.completions.create({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: testPrompt }] });
                     dslString = res.choices[0].message.content;
                 }
 
