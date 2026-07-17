@@ -109,6 +109,59 @@ test('14. Fuzz: Rapid Nested Unclosed', async (t) => {
 test('15. Fuzz: SQL Injection in Props (Safe Handling)', async (t) => {
     const input = `$sec:hero[h1:"DROP TABLE users;--"]`;
     const { jsxString } = await transform(parse(tokenize(input)));
-    // Next.js React JSX natively prevents SQLi by rendering as text, but we ensure it doesn't break our AST
     assert.ok(jsxString.includes('DROP TABLE'));
+});
+
+// === NEW SEO TESTS ===
+
+test('16. SEO: Title Exceeds 60 Chars (Strict Fail)', async (t) => {
+    const longTitle = "A".repeat(61);
+    const input = `$page[intent:"saas", title:"${longTitle}"]`;
+    const { validateSEO } = await import('../src/seo/validator.js');
+    const result = validateSEO(parse(tokenize(input)));
+    assert.strictEqual(result.isValid, false);
+    assert.ok(result.errors.some(e => e.includes('Title exceeds 60 characters')));
+});
+
+test('17. SEO: Title Length (Pass & Warn)', async (t) => {
+    const warnTitle = "A".repeat(55);
+    const input = `$page[intent:"saas", title:"${warnTitle}", h1:"Valid"]`;
+    const { validateSEO } = await import('../src/seo/validator.js');
+    const result = validateSEO(parse(tokenize(input)));
+    assert.strictEqual(result.isValid, true); // No fatal error for missing desc, just warnings
+    assert.ok(result.warnings.some(w => w.includes('Title is 55 characters')));
+});
+
+test('18. SEO: Meta Description Length (Strict Fail)', async (t) => {
+    const longDesc = "A".repeat(166);
+    const input = `$page[intent:"saas", h1:"Title", desc:"${longDesc}"]`;
+    const { validateSEO } = await import('../src/seo/validator.js');
+    const result = validateSEO(parse(tokenize(input)));
+    assert.strictEqual(result.isValid, false);
+    assert.ok(result.errors.some(e => e.includes('Meta description exceeds 165 characters')));
+});
+
+test('19. SEO: Meta Description Length (Pass & Warn)', async (t) => {
+    const warnDesc = "A".repeat(110);
+    const input = `$page[intent:"saas", h1:"Title", desc:"${warnDesc}"]`;
+    const { validateSEO } = await import('../src/seo/validator.js');
+    const result = validateSEO(parse(tokenize(input)));
+    assert.strictEqual(result.isValid, true);
+    assert.ok(result.warnings.some(w => w.includes('Optimal length is 120-159')));
+});
+
+test('20. SEO: Heading Hierarchy Skip (H1 to H3 without H2)', async (t) => {
+    const input = `$page[intent:"saas", h1:"Title", $sec:hero[h3:"Skipped H2"]]`;
+    const { validateSEO } = await import('../src/seo/validator.js');
+    const result = validateSEO(parse(tokenize(input)));
+    assert.strictEqual(result.isValid, false);
+    assert.ok(result.errors.some(e => e.includes('Heading hierarchy skip detected')));
+});
+
+test('21. SEO: Heading Hierarchy (Pass for H2 in new section)', async (t) => {
+    const input = `$page[intent:"saas", h1:"Page Title", $sec:hero[h2:"Hero 1"], $sec:features[h2:"Features 2", h3:"Subfeature"]]`;
+    const { validateSEO } = await import('../src/seo/validator.js');
+    const result = validateSEO(parse(tokenize(input)));
+    assert.strictEqual(result.isValid, true);
+    assert.strictEqual(result.errors.length, 0);
 });

@@ -49,7 +49,9 @@ aetherml dev temp.aether
 
 AetherML is not just a code generator; it is a defensive compliance engine designed for production.
 
-*   **SEO Guardrails (`--strict`)**: Statically analyzes the AST (Abstract Syntax Tree) before compilation. If an `<h1>` tag or intent meta is missing, the build will fatally fail, protecting your Google Search rankings.
+*   **SEO Guardrails (`--strict`)**: Statically analyzes the AST (Abstract Syntax Tree) before compilation to protect your Google Search rankings.
+    *   **Fatal Errors (Build Fails)**: Missing `<h1>` or intent meta, page `title` > 60 chars, meta `desc` > 165 chars, or skipping a heading hierarchy going deeper within a section (e.g., jumping from `h2` to `h4`).
+    *   **Non-Fatal Warnings (Console Only)**: Missing meta `desc`, page `title` between 50-60 chars, or meta `desc` < 120 or 160-165 chars.
 *   **The "Debugging Nightmare" Solved**: Source maps are automatically injected into the generated React components (`{/* AetherML Line 3: Generated from $sec:hero */}`), making it trivial to trace UI bugs back to the exact line in your DSL.
 *   **Zero Vendor Lock-In (`eject`)**: Run `aetherml eject file.aether` to instantly detach from the compiler. It extracts a pure, unopinionated Next.js codebase to an `extracted_app` folder, giving you 100% code ownership.
 

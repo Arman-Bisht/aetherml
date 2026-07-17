@@ -21,7 +21,11 @@ The Transformer traverses the AST and begins the heavy lifting. It maps AetherML
 
 ### 4. The SEO Engine (`src/seo/engine.js` & `src/seo/validator.js`)
 Before code generation, the AST is passed through the SEO Guardrails.
-*   **Validator:** Scans for missing `<h1>` tags or missing page intents. If `--strict` mode is enabled, it fatally crashes the build here to protect Search Engine rankings.
+*   **Validator:** Scans the AST to protect Search Engine rankings. If `--strict` mode is enabled, it fatally crashes the build on the following violations:
+    *   Missing `<h1>` tags or missing page intents.
+    *   Page `title` exceeding 60 characters.
+    *   Meta `desc` exceeding 165 characters.
+    *   Heading hierarchy skips within a section scope (e.g., an `<h3>` appears without a preceding `<h2>`).
 *   **Engine:** Automatically generates Schema.org JSON-LD structured data based on the page intent (e.g., generating `SoftwareApplication` schema for SaaS pages).
 
 ### 5. The Plugin Trust Model & Bridge (`src/plugins/`)

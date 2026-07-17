@@ -176,6 +176,9 @@ program
             console.log(chalk.dim('\n--- SEO Guardrail Report ---'));
             console.log(`${chalk.blue('[SEO] Headings:')} ${seoReport.h1Count === 1 ? chalk.green('OK (1 H1 found)') : chalk.yellow('WARNING (' + seoReport.h1Count + ' H1s)')}`);
             console.log(`${chalk.blue('[SEO] Intent Meta:')} ${seoReport.hasIntent ? chalk.green('OK') : chalk.yellow('WARNING')}`);
+            if (seoReport.warnings && seoReport.warnings.length > 0) {
+                seoReport.warnings.forEach(w => console.log(chalk.yellow(`[SEO WARNING] ${w}`)));
+            }
 
         } catch (error) {
             spinner.fail(chalk.red('Compilation failed: ' + error.message));
