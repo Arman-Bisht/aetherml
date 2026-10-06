@@ -9,7 +9,9 @@ aetherml.config.json
 dist_app/
 extracted_app/
 temp.aether
+.aether_cache
 *.log
+*.enc
 
 # OS Files
 .DS_Store

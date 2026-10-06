@@ -53,6 +53,7 @@ AetherML is not just a code generator; it is a defensive compliance engine desig
     *   **Fatal Errors (Build Fails)**: Missing `<h1>` or intent meta, page `title` > 60 chars, meta `desc` > 165 chars, or skipping a heading hierarchy going deeper within a section (e.g., jumping from `h2` to `h4`).
     *   **Non-Fatal Warnings (Console Only)**: Missing meta `desc`, page `title` between 50-60 chars, or meta `desc` < 120 or 160-165 chars.
 *   **The "Debugging Nightmare" Solved**: Source maps are automatically injected into the generated React components (`{/* AetherML Line 3: Generated from $sec:hero */}`), making it trivial to trace UI bugs back to the exact line in your DSL.
+*   **Non-Destructive Slot Architecture**: Custom code added inside `components/slots/` is automatically protected and never overwritten during re-compilation.
 *   **Zero Vendor Lock-In (`eject`)**: Run `aetherml eject file.aether` to instantly detach from the compiler. It extracts a pure, unopinionated Next.js codebase to an `extracted_app` folder, giving you 100% code ownership.
 
 ---
@@ -61,18 +62,23 @@ AetherML is not just a code generator; it is a defensive compliance engine desig
 
 AetherML syntax is designed for maximum token compression.
 
-### The Page Wrapper
-Everything must be wrapped in a `$page` tag:
+### The Page Wrapper & Theme Engine
+Everything must be wrapped in a `$page` tag. Supports built-in theme presets (`midnight`, `cyberpunk`, `minimal`, `corporate`, `emerald`) or custom overrides:
 ```aetherml
-$page[intent:"saas", theme:"dark",
+$page[intent:"saas", theme:"cyberpunk",
   // Components go here
 ]
 ```
 
-### Core Components
+### Core Primitives & Sections
+*   **Navigation Bar**: `$nav[brand:"MyProduct", links:"Features,Pricing,FAQ", cta:"Get Started"]`
 *   **Hero Section**: `$sec:hero[h1:"Build Faster", subtitle:"AI Compiler"]`
+*   **Features Grid**: `$sec:features[cols:"3", items:"Speed:100x faster|Security:Protected|Scale:Zero config"]`
+*   **Testimonials**: `$sec:testimonials[items:"Game changer.:Sarah Chen:CTO"]`
+*   **FAQ Accordion**: `$sec:faq[items:"Is it fast?:Sub-3ms compiles.|Can I deploy?:Native Vercel ready."]`
 *   **Pricing Section**: `$sec:pricing[tiers:"3", highlight:"pro"]`
 *   **Buttons**: `$btn[label:"Buy Now"]`
+*   **Footer**: `$footer[brand:"MyProduct", copyright:"© 2026 MyProduct"]`
 
 ### Integrations & Actions
 AetherML bridges third-party SDKs using single tags. The compiler automatically scaffolds the required client/server React architecture.
@@ -98,6 +104,9 @@ $anim:gsap[trigger:"load", effect:"fadeUp",
 | `aetherml dev <file>` | Compiles the DSL, installs dependencies, and runs `next dev`. |
 | `aetherml build <file>` | Standard compilation to `dist_app` without starting a server. |
 | `aetherml eject <file>` | Extracts pure React code to `extracted_app` and removes compiler links. |
+| `aetherml lint <file>` | Statically validates AST, SEO rules, and syntax without compiling. |
+| `aetherml playground` | Launches the interactive in-browser AetherML Playground sandbox. |
+| `aetherml compress <file>` | **Reverse compiler:** Compresses a React JSX file backwards into `.aether` DSL. |
 
 **Flags:**
 *   `--strict`: Fails the build if SEO requirements are unmet.

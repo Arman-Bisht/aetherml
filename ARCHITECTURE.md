@@ -28,18 +28,26 @@ Before code generation, the AST is passed through the SEO Guardrails.
     *   Heading hierarchy skips within a section scope (e.g., an `<h3>` appears without a preceding `<h2>`).
 *   **Engine:** Automatically generates Schema.org JSON-LD structured data based on the page intent (e.g., generating `SoftwareApplication` schema for SaaS pages).
 
-### 5. The Plugin Trust Model & Bridge (`src/plugins/`)
-A decoupled architecture where third-party integrations (like Razorpay, Supabase, GSAP) are completely separated from the core compiler. 
-**Enterprise Trust Model:** AetherML does **not** dynamically load unverified NPM packages at runtime. All plugins must be submitted as Pull Requests and manually audited by the core team before being merged. When the Transformer detects a vetted plugin tag (e.g., `$pay:razorpay`), it invokes the Bridge to pull the specific template and register its required NPM packages.
+### 5. The Theme Engine (`src/core/theme-engine.js`)
+Maps abstract DSL design tokens into standard CSS custom properties (`--primary`, `--background`, `--card`, `--radius`) and dynamically updates `tailwind.config.ts`. Includes out-of-the-box presets: `midnight`, `cyberpunk`, `minimal`, `corporate`, and `emerald`.
 
-### 6. The Generator (`src/core/enterprise-generator.js`)
-The final stage. The Generator takes the transformed React components, the SEO metadata, and the Plugin requirements, and scaffolds a pure Next.js 14 App Router application inside the `dist_app/` directory. It dynamically builds the `package.json`, runs `npm install`, and can optionally boot `next dev`.
+### 6. The Plugin Trust Model & Bridge (`src/plugins/`)
+A decoupled architecture where third-party integrations (like Razorpay, Supabase, GSAP) and semantic component primitives (`$nav`, `$sec:features`, `$sec:testimonials`, `$sec:faq`, `$footer`) are completely separated from the core compiler. 
+**Enterprise Trust Model:** AetherML does **not** dynamically load unverified NPM packages at runtime. All plugins must be submitted as Pull Requests and manually audited by the core team before being merged.
+
+### 7. The Generator & Non-Destructive Slots (`src/core/enterprise-generator.js`)
+The final stage. The Generator takes the transformed React components, the theme tokens, and the plugin requirements, and scaffolds a pure Next.js 14 App Router application inside `dist_app/`.
+*   **Slot Preservation:** Includes `components/slots/CustomSlot.tsx`. Any hand-crafted code written in the `slots/` directory is permanently protected and will never be overwritten on subsequent `build` or `dev` runs.
+
+### 8. The Reverse Compiler (`src/core/decompiler.js`)
+Translates standard React/JSX markup backwards into dense `.aether` DSL via pattern recognition, achieving up to 23x compression ratios for existing codebases.
 
 ---
 
 ## 🔄 Data Flow Diagram
 
 ```text
+Forward Pipeline:
 User Prompt 
   => [AI Provider via provider-adapter.js] 
   => .aether String
@@ -48,11 +56,17 @@ User Prompt
   => [Parser] 
   => AST 
   => [SEO Validator] (Pass/Fail)
-  => [Transformer + Plugin Bridge] 
-  => React String Templates + Dependencies 
-  => [Generator] 
+  => [Transformer + Theme Engine + Plugins] 
+  => React String Templates + Dependencies + CSS Tokens
+  => [Generator (Preserving Slots)] 
   => Next.js Application
+
+Reverse Pipeline:
+Existing React JSX File
+  => [Decompiler]
+  => Pattern Extraction & AST Mapping
+  => Compressed .aether DSL (up to 23x smaller)
 ```
 
 ## 🔒 Security Posture
-AetherML uses `src/utils/escapeHtml.js` to strictly sanitize all text inputs injected into React templates, preventing XSS attacks from hallucinated AI strings.
+AetherML uses `src/utils/escapeHtml.js` to strictly sanitize all text inputs injected into React templates, preventing XSS attacks from hallucinated AI strings. AST creation is shielded against `__proto__` prototype pollution.

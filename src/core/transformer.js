@@ -1,8 +1,15 @@
 import { escapeHtml } from '../utils/escapeHtml.js';
 import { renderHeroJSX } from '../plugins/components/hero.js';
+import { renderNavJSX } from '../plugins/components/nav.js';
+import { renderFeaturesJSX } from '../plugins/components/features.js';
+import { renderTestimonialsJSX } from '../plugins/components/testimonials.js';
+import { renderFaqJSX } from '../plugins/components/faq.js';
+import { renderFooterJSX } from '../plugins/components/footer.js';
+import { resolveTheme } from './theme-engine.js';
 
 export async function transform(ast) {
   let integrations = new Set();
+  let themeConfig = resolveTheme('midnight');
 
   async function walk(node) {
     if (node.type === 'Program') {
@@ -30,6 +37,19 @@ export async function transform(ast) {
       let rawPropsString = rawPropsList.length > 0 ? `[${rawPropsList.join(', ')}]` : '';
       const sourceMap = `\n{/* AetherML Line ${node.line || '?'}: Generated from ${escapeHtml(rawTag)}${escapeHtml(rawPropsString)} */}\n`;
 
+      if (compType === 'page') {
+        themeConfig = resolveTheme(propsObj.theme, {
+          primary: propsObj.primary,
+          accent: propsObj.accent,
+          radius: propsObj.radius
+        });
+        return `${sourceMap}<div className="aether-page flex flex-col min-h-screen w-full bg-[var(--background)] text-[var(--foreground)]" data-intent="${escapeHtml(propsObj.intent) || 'generic'}">\n${childrenJSX}\n</div>`;
+      }
+
+      if (compName === 'nav' || compType === 'nav') {
+        return sourceMap + renderNavJSX(propsObj, childrenJSX);
+      }
+
       if (compType === 'anim' && compName === 'gsap') {
         integrations.add('gsap');
         if (!propsObj.effect) throw new Error(`Error in GsapPlugin: Required prop 'effect' is missing on Line ${node.line || '?'}.`);
@@ -50,6 +70,22 @@ export async function transform(ast) {
       if (compType === 'sec' && compName === 'hero') {
         if (!propsObj.h1) throw new Error(`Error in HeroPlugin: Required prop 'h1' is missing on Line ${node.line || '?'}.`);
         return sourceMap + renderHeroJSX(propsObj, childrenJSX);
+      }
+
+      if (compType === 'sec' && compName === 'features') {
+        return sourceMap + renderFeaturesJSX(propsObj, childrenJSX);
+      }
+
+      if (compType === 'sec' && compName === 'testimonials') {
+        return sourceMap + renderTestimonialsJSX(propsObj, childrenJSX);
+      }
+
+      if (compType === 'sec' && compName === 'faq') {
+        return sourceMap + renderFaqJSX(propsObj, childrenJSX);
+      }
+
+      if (compName === 'footer' || compType === 'footer') {
+        return sourceMap + renderFooterJSX(propsObj, childrenJSX);
       }
       
       if (compType === 'sec' && compName === 'pricing') {
@@ -83,11 +119,7 @@ export async function transform(ast) {
            return `${sourceMap}<RazorpayButton amount="${amountMatch[1]}" />`;
         }
 
-        return `${sourceMap}<button className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-full font-bold shadow-lg shadow-blue-500/30 transition-colors">${label}</button>`;
-      }
-      
-      if (compType === 'page') {
-        return `${sourceMap}<div className="aether-page flex flex-col min-h-screen w-full" data-intent="${escapeHtml(propsObj.intent) || 'generic'}">\n${childrenJSX}\n</div>`;
+        return `${sourceMap}<button className="px-8 py-3 bg-[var(--primary)] hover:opacity-90 text-[var(--primary-foreground)] rounded-[var(--radius)] font-bold shadow-lg shadow-blue-500/20 transition-all">${label}</button>`;
       }
 
       return `${sourceMap}<div>${childrenJSX}</div>`;
@@ -98,5 +130,6 @@ export async function transform(ast) {
 
   const jsxString = await walk(ast);
 
-  return { jsxString, integrations };
+  return { jsxString, integrations, themeConfig };
 }
+

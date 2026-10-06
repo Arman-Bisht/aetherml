@@ -2,6 +2,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import http from 'http';
 import { spawn } from 'child_process';
 import crypto from 'crypto';
 import { Command } from 'commander';
@@ -22,6 +23,7 @@ import { transform } from '../src/core/transformer.js';
 import { generateNextJsApp } from '../src/core/enterprise-generator.js';
 import { validateSEO } from '../src/seo/validator.js';
 import { generateAetherML, validateCredentials } from '../src/core/provider-adapter.js';
+import { decompileReactToAether } from '../src/core/decompiler.js';
 
 function showWelcome() {
     console.log(chalk.cyan(figlet.textSync('AetherML', { font: 'Slant' })));
@@ -33,6 +35,10 @@ function showWelcome() {
 
 function writeFileIfChanged(fullPath, content) {
     if (fs.existsSync(fullPath)) {
+        // SLOT PRESERVATION: Never overwrite user custom code in components/slots
+        if (fullPath.includes(path.join('components', 'slots'))) {
+            return false;
+        }
         const existing = fs.readFileSync(fullPath, 'utf-8');
         if (existing === content) return false;
     }
@@ -155,11 +161,11 @@ program
             spinner.text = 'Transforming to React Components...';
             await new Promise(r => setTimeout(r, 400));
             
-            const { jsxString, integrations } = await transform(ast);
+            const { jsxString, integrations, themeConfig } = await transform(ast);
 
             spinner.text = 'Generating Virtual Filesystem...';
             await new Promise(r => setTimeout(r, 400));
-            const files = generateNextJsApp(jsxString, integrations, ast);
+            const files = generateNextJsApp(jsxString, integrations, ast, themeConfig);
             
             const outputPath = path.resolve(options.output);
             if (!fs.existsSync(outputPath)) fs.mkdirSync(outputPath, { recursive: true });
@@ -201,8 +207,8 @@ program
             const source = fs.readFileSync(inputPath, 'utf-8');
             const tokens = tokenize(source);
             const ast = parse(tokens);
-            const { jsxString, integrations } = await transform(ast);
-            const files = generateNextJsApp(jsxString, integrations, ast);
+            const { jsxString, integrations, themeConfig } = await transform(ast);
+            const files = generateNextJsApp(jsxString, integrations, ast, themeConfig);
             
             const outputPath = path.resolve(options.output);
             if (!fs.existsSync(outputPath)) fs.mkdirSync(outputPath, { recursive: true });
@@ -238,8 +244,8 @@ program
             const source = fs.readFileSync(inputPath, 'utf-8');
             const tokens = tokenize(source);
             const ast = parse(tokens);
-            const { jsxString, integrations } = await transform(ast);
-            const files = generateNextJsApp(jsxString, integrations, ast);
+            const { jsxString, integrations, themeConfig } = await transform(ast);
+            const files = generateNextJsApp(jsxString, integrations, ast, themeConfig);
             
             if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
 
@@ -303,6 +309,121 @@ program
         });
     });
 
+program
+    .command('lint <file>')
+    .description('Statically validate DSL syntax, SEO guardrails, and AST integrity without compiling')
+    .option('--strict', 'Exit with code 1 on any warning or error')
+    .action(async (file, options) => {
+        showWelcome();
+        const inputPath = path.resolve(file);
+        if (!fs.existsSync(inputPath)) {
+            console.error(chalk.red(`✖ Error: Input file not found at ${inputPath}`));
+            process.exit(1);
+        }
+
+        try {
+            const source = fs.readFileSync(inputPath, 'utf-8');
+            const tokens = tokenize(source);
+            const ast = parse(tokens);
+            const seoReport = validateSEO(ast);
+
+            console.log(chalk.bold.blue("===================================================="));
+            console.log(chalk.bold.blue("AetherML Static Linter & SEO Diagnostic"));
+            console.log(chalk.bold.blue("====================================================\n"));
+
+            console.log(`${chalk.gray('File:')} ${chalk.white(file)}`);
+            console.log(`${chalk.gray('AST Components:')} ${chalk.cyan(ast.body.length)}`);
+            console.log(`${chalk.gray('H1 Count:')} ${seoReport.h1Count === 1 ? chalk.green('1 (Valid)') : chalk.yellow(seoReport.h1Count)}`);
+            console.log(`${chalk.gray('Intent Defined:')} ${seoReport.hasIntent ? chalk.green('Yes') : chalk.red('No')}\n`);
+
+            if (seoReport.errors.length > 0) {
+                console.log(chalk.bold.red('✖ FATAL SEO ERRORS:'));
+                seoReport.errors.forEach(e => console.log(chalk.red(`  - ${e}`)));
+            } else {
+                console.log(chalk.bold.green('✔ No fatal SEO errors detected.'));
+            }
+
+            if (seoReport.warnings && seoReport.warnings.length > 0) {
+                console.log(chalk.bold.yellow('\n⚠ WARNINGS:'));
+                seoReport.warnings.forEach(w => console.log(chalk.yellow(`  - ${w}`)));
+            }
+
+            console.log('\n');
+            if (!seoReport.isValid || (options.strict && seoReport.warnings && seoReport.warnings.length > 0)) {
+                console.log(chalk.bold.red('✖ Lint Status: FAILED'));
+                process.exit(1);
+            } else {
+                console.log(chalk.bold.green('✔ Lint Status: PASSED'));
+            }
+        } catch (err) {
+            console.error(chalk.red(`✖ Syntax / Parse Error: ${err.message}`));
+            process.exit(1);
+        }
+    });
+
+program
+    .command('playground')
+    .description('Open the interactive in-browser AetherML Playground')
+    .option('-p, --port <number>', 'Port to run the playground on', '3030')
+    .action(async (options) => {
+        showWelcome();
+        const playgroundPath = path.resolve(__dirname, '..', 'playground.html');
+        if (!fs.existsSync(playgroundPath)) {
+            console.error(chalk.red(`✖ Error: playground.html not found at ${playgroundPath}`));
+            process.exit(1);
+        }
+
+        const htmlContent = fs.readFileSync(playgroundPath, 'utf-8');
+        const port = parseInt(options.port, 10) || 3030;
+
+        const server = http.createServer((req, res) => {
+            res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+            res.end(htmlContent);
+        });
+
+        server.listen(port, () => {
+            const url = `http://localhost:${port}`;
+            console.log(chalk.bold.green(`✔ AetherML Playground server running at: ${chalk.cyan(url)}`));
+            console.log(chalk.dim('Press Ctrl+C in terminal to stop the server.\n'));
+
+            // Safely open the default browser without shell concatenation warnings
+            if (process.platform === 'win32') {
+                spawn('cmd', ['/c', 'start', '', url], { stdio: 'ignore' });
+            } else if (process.platform === 'darwin') {
+                spawn('open', [url], { stdio: 'ignore' });
+            } else {
+                spawn('xdg-open', [url], { stdio: 'ignore' });
+            }
+        });
+    });
+
+program
+    .command('compress <file> [output]')
+    .description('Reverse-compile a React/JSX file into compressed AetherML DSL')
+    .action(async (file, output) => {
+        showWelcome();
+        const inputPath = path.resolve(file);
+        if (!fs.existsSync(inputPath)) {
+            console.error(chalk.red(`✖ Error: Input file not found at ${inputPath}`));
+            process.exit(1);
+        }
+
+        const source = fs.readFileSync(inputPath, 'utf-8');
+        const { dslString, stats } = decompileReactToAether(source);
+
+        const outPath = output ? path.resolve(output) : path.resolve(path.dirname(inputPath), path.basename(inputPath, path.extname(inputPath)) + '.aether');
+        fs.writeFileSync(outPath, dslString, 'utf-8');
+
+        console.log(chalk.bold.blue("===================================================="));
+        console.log(chalk.bold.blue("AetherML Reverse Compiler (React -> DSL)"));
+        console.log(chalk.bold.blue("====================================================\n"));
+
+        console.log(`Original React code: ${chalk.yellow(stats.originalLength)} chars`);
+        console.log(`Compressed DSL code: ${chalk.cyan(stats.compressedLength)} chars`);
+        console.log(`Compression ratio:   ${chalk.bold.magenta(stats.ratio)} smaller!\n`);
+        console.log(chalk.green(`✔ Saved to: ${outPath}`));
+    });
+
 // Fallback logic to show help if no args provided
 if (process.argv.length <= 2) {
     showWelcome();
@@ -310,3 +431,4 @@ if (process.argv.length <= 2) {
 }
 
 program.parse(process.argv);
+

@@ -1,0 +1,59 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "AetherML",
+  "scopeName": "source.aether",
+  "fileTypes": ["aether"],
+  "patterns": [
+    {
+      "name": "comment.line.double-slash.aether",
+      "match": "//.*$"
+    },
+    {
+      "name": "comment.block.aether",
+      "begin": "/\\*",
+      "end": "\\*/"
+    },
+    {
+      "name": "entity.name.tag.aether",
+      "match": "\\$[a-zA-Z0-9_-]+(:[a-zA-Z0-9_-]+)?"
+    },
+    {
+      "name": "variable.parameter.aether",
+      "match": "\\b[a-zA-Z0-9_-]+(?=:)"
+    },
+    {
+      "name": "string.quoted.double.aether",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        {
+          "name": "constant.character.escape.aether",
+          "match": "\\\\."
+        }
+      ]
+    },
+    {
+      "name": "string.quoted.single.aether",
+      "begin": "'",
+      "end": "'",
+      "patterns": [
+        {
+          "name": "constant.character.escape.aether",
+          "match": "\\\\."
+        }
+      ]
+    },
+    {
+      "name": "punctuation.section.brackets.aether",
+      "match": "[\\[\\]]"
+    },
+    {
+      "name": "punctuation.separator.key-value.aether",
+      "match": ":"
+    },
+    {
+      "name": "punctuation.separator.comma.aether",
+      "match": ","
+    }
+  ]
+}

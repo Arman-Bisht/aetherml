@@ -38,15 +38,17 @@
     const { motion } = window.Motion;
 
     const PRESETS = {
-      hero: '$sec:hero[h1:"AetherML Engine", $btn[label:"Deploy Now"]]',
-      chart: '$plugin:chart[type:"bar", labels:"Q1|Q2|Q3|Q4", data:"50|120|200|350"]',
-      model: '$plugin:3d[model:"startup-logo", spin:"true"]'
+      saas: `$page[theme:"midnight", $nav[brand:"AetherML", links:"Features,Pricing,FAQ"], $sec:hero[h1:"Build Next.js at Light Speed", subtitle:"The AI-Native compiler"], $sec:features[cols:"3"], $sec:pricing, $footer[brand:"AetherML"]]`,
+      cyberpunk: `$page[theme:"cyberpunk", $nav[brand:"CyberAether", links:"Protocol,Nodes,Access"], $sec:hero[h1:"Neon Matrix Compiler", subtitle:"Sub-millisecond AST execution"], $btn[label:"Initialize Terminal"]]`,
+      features: `$sec:features[cols:"3", items:"Speed:Under 3ms compile time|Security:AST Prototype Pollution Shield|SEO:Strict heading hierarchy guardrails"]`,
+      faq: `$sec:faq[items:"What is AetherML?:An AI-Native DSL Compiler for Next.js|How much does it compress?:Between 4x and 23x token reduction"]`,
+      testimonials: `$sec:testimonials[items:"Cut our AI token bills by 85%.:Sarah Chen:CTO CloudScale|The built-in SEO guardrails are gold.:Alex Rivera:Lead Architect"]`
     };
 
     const PIPELINE_STEPS = ["Lexer", "Parser", "CSS", "SEO", "Generator"];
 
     function App() {
-      const [code, setCode] = useState(PRESETS.hero);
+      const [code, setCode] = useState(PRESETS.saas);
       const [provider, setProvider] = useState('nim');
       const [isBuilding, setIsBuilding] = useState(false);
       const [activeStep, setActiveStep] = useState(-1);
@@ -71,55 +73,142 @@
 
         // Simulate Pipeline Animation
         for (let i = 0; i < PIPELINE_STEPS.length; i++) {
-          await new Promise(resolve => setTimeout(resolve, 500)); 
+          await new Promise(resolve => setTimeout(resolve, 350)); 
           setActiveStep(i);
           setLogs(prev => [...prev, `[AetherML] Compiling phase ${i + 1}: ${PIPELINE_STEPS[i]}...`]);
         }
 
-        await new Promise(resolve => setTimeout(resolve, 600)); 
+        await new Promise(resolve => setTimeout(resolve, 300)); 
         
-        // Mock output generation logic purely for visual preview
+        const isCyber = code.includes('cyberpunk');
+        const primary = isCyber ? '#f43f5e' : '#3b82f6';
+        const bg = isCyber ? '#050508' : '#0b0f19';
+
+        let bodyContent = '';
+
+        if (code.includes('$nav')) {
+          const brandMatch = code.match(/brand:\s*"([^"]+)"/);
+          const brand = brandMatch ? brandMatch[1] : 'AetherML';
+          bodyContent += `
+            <nav style="display:flex; justify-content:space-between; align-items:center; padding:16px 32px; border-bottom:1px solid rgba(255,255,255,0.08); background:rgba(15,23,42,0.85); backdrop-filter:blur(10px); position:sticky; top:0; z-index:50;">
+              <span style="font-weight:900; font-size:1.3rem; color:${primary}; letter-spacing:-0.5px;">${brand}</span>
+              <div style="display:flex; gap:24px; font-size:0.9rem; color:#94a3b8;">
+                <span style="cursor:pointer;">Features</span><span style="cursor:pointer;">Pricing</span><span style="cursor:pointer;">FAQ</span>
+              </div>
+              <button class="btn" style="padding:8px 18px; margin:0; font-size:0.85rem;">Get Started</button>
+            </nav>
+          `;
+        }
+
+        if (code.includes('$sec:hero')) {
+          const h1Match = code.match(/h1:\s*"([^"]+)"/);
+          const subMatch = code.match(/subtitle:\s*"([^"]+)"/);
+          const h1 = h1Match ? h1Match[1] : 'Build Faster with AetherML';
+          const sub = subMatch ? subMatch[1] : 'The AI-Native compiler that generates full-stack Next.js apps';
+          bodyContent += `
+            <section style="text-align:center; padding:70px 24px;">
+              <h1 style="font-size:3.2rem; font-weight:900; margin-bottom:16px; background:linear-gradient(to right, #60a5fa, #2dd4bf); -webkit-background-clip:text; -webkit-text-fill-color:transparent; line-height:1.15;">${h1}</h1>
+              <p style="font-size:1.2rem; color:#94a3b8; max-width:640px; margin:0 auto 32px; line-height:1.6;">${sub}</p>
+              <button class="btn">Deploy with AetherML</button>
+            </section>
+          `;
+        }
+
+        if (code.includes('$sec:features')) {
+          bodyContent += `
+            <section style="padding:50px 24px; max-width:1050px; margin:0 auto;">
+              <h2 style="text-align:center; font-size:2.2rem; font-weight:800; margin-bottom:36px;">Engineered for High Performance</h2>
+              <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:20px;">
+                <div style="background:#131b2e; padding:28px; border-radius:16px; border:1px solid rgba(255,255,255,0.08);">
+                  <div style="color:${primary}; font-size:1.3rem; font-weight:bold; margin-bottom:10px;">01. Fast</div>
+                  <p style="color:#94a3b8; font-size:0.9rem; line-height:1.5;">Compiles in under 3 milliseconds on local CPU.</p>
+                </div>
+                <div style="background:#131b2e; padding:28px; border-radius:16px; border:1px solid rgba(255,255,255,0.08);">
+                  <div style="color:${primary}; font-size:1.3rem; font-weight:bold; margin-bottom:10px;">02. Shielded</div>
+                  <p style="color:#94a3b8; font-size:0.9rem; line-height:1.5;">AST Prototype Pollution and XSS protection built-in.</p>
+                </div>
+                <div style="background:#131b2e; padding:28px; border-radius:16px; border:1px solid rgba(255,255,255,0.08);">
+                  <div style="color:${primary}; font-size:1.3rem; font-weight:bold; margin-bottom:10px;">03. SEO Strict</div>
+                  <p style="color:#94a3b8; font-size:0.9rem; line-height:1.5;">Automated heading hierarchy & title length guardrails.</p>
+                </div>
+              </div>
+            </section>
+          `;
+        }
+
+        if (code.includes('pricing')) {
+          bodyContent += `
+            <section style="padding:50px 24px; max-width:800px; margin:0 auto; text-align:center;">
+              <h2 style="font-size:2.2rem; font-weight:800; margin-bottom:32px;">Simple, Transparent Pricing</h2>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+                <div style="background:#131b2e; padding:32px; border-radius:16px; border:1px solid rgba(255,255,255,0.08);">
+                  <h3 style="margin-top:0; font-size:1.2rem;">Community</h3>
+                  <p style="font-size:2.2rem; font-weight:bold; margin:16px 0;">Free</p>
+                  <button class="btn" style="background:#334155; width:100%;">Get Started</button>
+                </div>
+                <div style="background:#131b2e; padding:32px; border-radius:16px; border:2px solid ${primary};">
+                  <h3 style="margin-top:0; color:${primary}; font-size:1.2rem;">Pro Enterprise</h3>
+                  <p style="font-size:2.2rem; font-weight:bold; margin:16px 0;">₹999</p>
+                  <button class="btn" style="width:100%;">Upgrade Now</button>
+                </div>
+              </div>
+            </section>
+          `;
+        }
+
+        if (code.includes('$sec:faq')) {
+          bodyContent += `
+            <section style="padding:40px 24px; max-width:760px; margin:0 auto;">
+              <h2 style="text-align:center; font-size:2.2rem; font-weight:800; margin-bottom:28px;">Frequently Asked Questions</h2>
+              <details style="background:#131b2e; padding:16px 20px; border-radius:12px; margin-bottom:12px; cursor:pointer;" open>
+                <summary style="font-weight:bold; color:white;">What is AetherML?</summary>
+                <p style="color:#94a3b8; margin-top:10px; font-size:0.95rem;">An AI-native DSL compiler that compresses Next.js React code by up to 23x for LLMs.</p>
+              </details>
+              <details style="background:#131b2e; padding:16px 20px; border-radius:12px; margin-bottom:12px; cursor:pointer;">
+                <summary style="font-weight:bold; color:white;">Can I deploy to Vercel or Netlify?</summary>
+                <p style="color:#94a3b8; margin-top:10px; font-size:0.95rem;">Yes! It compiles directly to production Next.js 14 App Router code with zero lock-in.</p>
+              </details>
+            </section>
+          `;
+        }
+
+        if (code.includes('$btn') && !bodyContent.includes('<button')) {
+          const btnMatch = code.match(/label:\s*"([^"]+)"/);
+          const lbl = btnMatch ? btnMatch[1] : 'Action';
+          bodyContent += `<div style="text-align:center; padding:40px;"><button class="btn">${lbl}</button></div>`;
+        }
+
+        if (code.includes('$footer')) {
+          bodyContent += `
+            <footer style="padding:40px 24px; border-top:1px solid rgba(255,255,255,0.08); text-align:center; color:#64748b; font-size:0.85rem; margin-top:40px;">
+              © 2026 AetherML Enterprise. All rights reserved.
+            </footer>
+          `;
+        }
+
+        if (!bodyContent) {
+          bodyContent = `<div style="text-align:center; padding:80px;"><h1>Compiled Output</h1><p style="color:#94a3b8;">Component rendered successfully.</p></div>`;
+        }
+
         let output = `
           <html>
             <head>
               <style>
-                body { background: #0b0f19; color: white; font-family: 'Inter', sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-                .btn { background: #3b82f6; color: white; padding: 12px 24px; border-radius: 8px; border: none; font-weight: bold; margin-top: 24px; cursor: pointer; box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4); transition: transform 0.2s; }
+                body { background: ${bg}; color: white; font-family: ui-sans-serif, system-ui, sans-serif; margin: 0; min-height: 100vh; }
+                .btn { background: ${primary}; color: white; padding: 12px 24px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4); transition: transform 0.2s; }
                 .btn:hover { transform: translateY(-2px); }
-                .hero { text-align: center; }
-                h1 { font-size: 3rem; background: -webkit-linear-gradient(#fff, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; }
-                .chart-container { width: 400px; height: 250px; background: #1e293b; border-radius: 16px; padding: 24px; display: flex; align-items: flex-end; justify-content: space-around; box-sizing: border-box; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-                .bar { width: 40px; background: linear-gradient(180deg, #3b82f6 0%, #1e3a8a 100%); border-radius: 6px 6px 0 0; position: relative; }
-                .bar span { position: absolute; top: -25px; left: 50%; transform: translateX(-50%); font-size: 12px; font-weight: bold; color: #94a3b8; }
-                .model { width: 250px; height: 250px; border: 4px dashed #3b82f6; border-radius: 50%; display: flex; align-items: center; justify-content: center; animation: spin 4s linear infinite; box-shadow: 0 0 40px rgba(59, 130, 246, 0.2); }
-                @keyframes spin { 100% { transform: rotate(360deg); } }
               </style>
             </head>
             <body>
+              ${bodyContent}
+            </body>
+          </html>
         `;
-        
-        if (code.includes('hero')) {
-          output += `<div class="hero"><h1>AetherML Engine</h1><button class="btn">Deploy Now</button></div>`;
-        } else if (code.includes('chart')) {
-          output += `
-            <div class="chart-container">
-              <div class="bar" style="height: 20%"><span>Q1</span></div>
-              <div class="bar" style="height: 40%"><span>Q2</span></div>
-              <div class="bar" style="height: 70%"><span>Q3</span></div>
-              <div class="bar" style="height: 100%"><span>Q4</span></div>
-            </div>`;
-        } else if (code.includes('3d')) {
-          output += `<div class="model"><h2 style="color: #60a5fa; margin:0;">3D Render</h2></div>`;
-        } else {
-          output += `<div><h1 style="color: #3b82f6;">Compiled Successfully!</h1></div>`;
-        }
-
-        output += `</body></html>`;
 
         setPreviewHtml(output);
-        setLogs(prev => [...prev, `[System] Compilation successful! HTML injected.`]);
+        setLogs(prev => [...prev, `[System] Compilation successful! HTML preview injected.`]);
         setIsBuilding(false);
-        setActiveStep(PIPELINE_STEPS.length); // All complete
+        setActiveStep(PIPELINE_STEPS.length);
       };
 
       return (
@@ -145,11 +234,13 @@
               </select>
               <select 
                 className="bg-slate-800/80 border border-slate-600 rounded-md px-4 py-2 text-sm focus:outline-none focus:border-blue-500 text-slate-200 transition-colors"
-                onChange={(e) => setCode(PRESETS[e.target.value])}
+                onChange={(e) => setCode(PRESETS[e.target.value] || PRESETS.saas)}
               >
-                <option value="hero">Preset: Hero Section</option>
-                <option value="chart">Preset: Dashboard Chart</option>
-                <option value="model">Preset: 3D Model</option>
+                <option value="saas">Preset: SaaS Landing Page</option>
+                <option value="cyberpunk">Preset: Cyberpunk Theme</option>
+                <option value="features">Preset: Features Grid</option>
+                <option value="faq">Preset: FAQ Accordion</option>
+                <option value="testimonials">Preset: Testimonials</option>
               </select>
               <button 
                 onClick={handleBuild}

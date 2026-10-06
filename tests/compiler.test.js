@@ -165,3 +165,117 @@ test('21. SEO: Heading Hierarchy (Pass for H2 in new section)', async (t) => {
     assert.strictEqual(result.isValid, true);
     assert.strictEqual(result.errors.length, 0);
 });
+
+// === AETHERML 2.0 ADVANCED TESTS ===
+
+test('22. Primitive: $nav Component Rendering', async (t) => {
+    const input = `$page[intent:"saas", $nav[brand:"NexusAI", links:"Docs,Pricing,Blog", cta:"Launch App"]]`;
+    const { jsxString } = await transform(parse(tokenize(input)));
+    assert.ok(jsxString.includes('NexusAI'));
+    assert.ok(jsxString.includes('#docs'));
+    assert.ok(jsxString.includes('Launch App'));
+});
+
+test('23. Primitive: $sec:features Grid Rendering', async (t) => {
+    const input = `$page[intent:"saas", $sec:features[cols:"3", items:"Latency:Sub 5ms|Encryption:AES-256|Storage:Unlimited"]]`;
+    const { jsxString } = await transform(parse(tokenize(input)));
+    assert.ok(jsxString.includes('Latency'));
+    assert.ok(jsxString.includes('Sub 5ms'));
+    assert.ok(jsxString.includes('md:grid-cols-3'));
+});
+
+test('24. Primitive: $sec:testimonials Cards Rendering', async (t) => {
+    const input = `$page[intent:"saas", $sec:testimonials[items:"Game changer for our startup.:Jane Doe:Founder"]]`;
+    const { jsxString } = await transform(parse(tokenize(input)));
+    assert.ok(jsxString.includes('Game changer for our startup.'));
+    assert.ok(jsxString.includes('Jane Doe'));
+    assert.ok(jsxString.includes('Founder'));
+});
+
+test('25. Primitive: $sec:faq Accordion Rendering', async (t) => {
+    const input = `$page[intent:"saas", $sec:faq[items:"Is it open source?:Yes, MIT licensed."]]`;
+    const { jsxString } = await transform(parse(tokenize(input)));
+    assert.ok(jsxString.includes('<details'));
+    assert.ok(jsxString.includes('<summary'));
+    assert.ok(jsxString.includes('Is it open source?'));
+});
+
+test('26. Primitive: $footer Component Rendering', async (t) => {
+    const input = `$page[intent:"saas", $footer[brand:"CloudX", copyright:"© 2026 CloudX Inc.", links:"Privacy,Terms"]]`;
+    const { jsxString } = await transform(parse(tokenize(input)));
+    assert.ok(jsxString.includes('CloudX'));
+    assert.ok(jsxString.includes('© 2026 CloudX Inc.'));
+    assert.ok(jsxString.includes('Privacy'));
+});
+
+test('27. Theme Engine: Preset Token Resolution', async (t) => {
+    const { resolveTheme, generateThemeCssVariables } = await import('../src/core/theme-engine.js');
+    const cyberTheme = resolveTheme('cyberpunk');
+    assert.strictEqual(cyberTheme.name, 'Cyberpunk Neon');
+    assert.strictEqual(cyberTheme.primary, '#f43f5e');
+
+    const cssVars = generateThemeCssVariables(cyberTheme);
+    assert.ok(cssVars.includes('--primary: #f43f5e;'));
+    assert.ok(cssVars.includes('--background: #050508;'));
+});
+
+test('28. Generator: Theme CSS and Tailwind Token Mapping', async (t) => {
+    const { generateNextJsApp } = await import('../src/core/enterprise-generator.js');
+    const { resolveTheme } = await import('../src/core/theme-engine.js');
+    const theme = resolveTheme('minimal');
+    const files = generateNextJsApp('<div>Hello</div>', new Set(), { body: [] }, theme);
+    
+    assert.ok(files['app/globals.css'].includes('--primary: #ffffff;'));
+    assert.ok(files['tailwind.config.ts'].includes('background: "var(--background)"'));
+    assert.ok(files['app/page.tsx'].includes('CustomSlot'));
+});
+
+test('29. Generator: Slot Architecture Extensibility', async (t) => {
+    const { generateNextJsApp } = await import('../src/core/enterprise-generator.js');
+    const files = generateNextJsApp('<div>Hello</div>', new Set(), { body: [] });
+    assert.ok(files['components/slots/CustomSlot.tsx'].includes('export function CustomSlot()'));
+});
+
+test('30. Decompiler: Reverse JSX to AetherML DSL', async (t) => {
+    const { decompileReactToAether } = await import('../src/core/decompiler.js');
+    const mockReact = `
+      export default function Page() {
+        return (
+          <nav><span>MyCompany</span><a href="#features">Features</a></nav>
+          <section><h1>Supercharge Your Workflow</h1><p>Next-gen developer platform</p></section>
+          <section><h2>Features</h2><h3>Fast</h3></section>
+          <footer><span>MyCompany</span></footer>
+        );
+      }
+    `;
+    const { dslString, stats } = decompileReactToAether(mockReact);
+    assert.ok(dslString.includes('$page'));
+    assert.ok(dslString.includes('$nav[brand:"MyCompany"'));
+    assert.ok(dslString.includes('$sec:hero[h1:"Supercharge Your Workflow"'));
+    assert.ok(dslString.includes('$sec:features'));
+    assert.ok(stats.compressedLength < stats.originalLength);
+});
+
+test('31. Full-Stack End-to-End: Enterprise SaaS Landing Page', async (t) => {
+    const fullDSL = `
+$page[intent:"saas", theme:"cyberpunk",
+  $nav[brand:"AetherV2", links:"Product,Features,Pricing,FAQ", cta:"Get Started"],
+  $sec:hero[h1:"The Future of AI Compilation", subtitle:"Transform abstract thoughts into production code"],
+  $sec:features[cols:"3", items:"Blazing:100x faster|Hardened:Zero XSS|Extensible:Slot system"],
+  $sec:testimonials[items:"Cut our latency in half.:Dev Leader:Acme"],
+  $sec:faq[items:"Can I deploy to Vercel?:Yes, natively out of the box."],
+  $sec:pricing[tiers:"3", highlight:"pro"],
+  $footer[brand:"AetherV2", copyright:"© 2026 AetherV2. All rights reserved."]
+]
+    `.trim();
+
+    const ast = parse(tokenize(fullDSL));
+    const { jsxString, themeConfig } = await transform(ast);
+    assert.strictEqual(themeConfig.name, 'Cyberpunk Neon');
+    assert.ok(jsxString.includes('AetherV2'));
+    assert.ok(jsxString.includes('The Future of AI Compilation'));
+    assert.ok(jsxString.includes('md:grid-cols-3'));
+    assert.ok(jsxString.includes('Acme'));
+    assert.ok(jsxString.includes('<details'));
+});
+

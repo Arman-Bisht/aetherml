@@ -1,12 +1,13 @@
 import { GsapWrapperCode } from '../plugins/integrations/gsap.js';
 import { AuthUICode } from '../plugins/integrations/supabase.js';
 import { RazorpayRouteCode, RazorpayButtonCode } from '../plugins/integrations/razorpay.js';
+import { generateThemeCssVariables, resolveTheme } from './theme-engine.js';
 
 /**
  * Next.js Generator
- * Scaffolds Next.js app and imports modular plugins
+ * Scaffolds Next.js app, themes, slots, and imports modular plugins
  */
-export function generateNextJsApp(jsxString, integrations, ast) {
+export function generateNextJsApp(jsxString, integrations, ast, themeConfig = resolveTheme('midnight')) {
   const files = {};
 
   const dependencies = {
@@ -68,7 +69,26 @@ const config: Config = {
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
   ],
-  theme: { extend: {} },
+  theme: {
+    extend: {
+      colors: {
+        background: "var(--background)",
+        foreground: "var(--foreground)",
+        primary: {
+          DEFAULT: "var(--primary)",
+          foreground: "var(--primary-foreground)",
+        },
+        card: {
+          DEFAULT: "var(--card)",
+          border: "var(--card-border)",
+        },
+        accent: "var(--accent)",
+      },
+      borderRadius: {
+        theme: "var(--radius)",
+      }
+    }
+  },
   plugins: [],
 };
 export default config;
@@ -76,20 +96,21 @@ export default config;
 
   files['postcss.config.js'] = `module.exports = { plugins: { tailwindcss: {}, autoprefixer: {}, } };`;
 
-  files['app/globals.css'] = `@tailwind base;\n@tailwind components;\n@tailwind utilities;\nbody { background-color: #0f172a; color: white; margin: 0; }`;
+  const cssVars = generateThemeCssVariables(themeConfig);
+  files['app/globals.css'] = `@tailwind base;\n@tailwind components;\n@tailwind utilities;\n\n${cssVars}\n\nbody { background-color: var(--background); color: var(--foreground); margin: 0; }`;
 
   files['app/layout.tsx'] = `
 import './globals.css';
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className="antialiased min-h-screen bg-[var(--background)] text-[var(--foreground)]">{children}</body>
     </html>
   );
 }
   `.trim();
 
-  let pageImports = '';
+  let pageImports = `import { CustomSlot } from '../components/slots/CustomSlot';\n`;
   
   if (integrations.has('gsap')) pageImports += `import { GsapWrapper } from '../components/GsapWrapper';\n`;
   if (integrations.has('supabase')) pageImports += `import { AuthUI } from '../components/AuthUI';\n`;
@@ -100,14 +121,34 @@ ${pageImports}
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-slate-900">
+    <main className="min-h-screen flex flex-col bg-[var(--background)] text-[var(--foreground)]">
       ${jsxString}
+      <CustomSlot />
     </main>
   );
 }
   `.trim();
 
-  // Load from modular independent plugin files!
+  // User Extensibility Slot: Never overwritten on re-compile!
+  files['components/slots/CustomSlot.tsx'] = `
+"use client";
+import React from 'react';
+
+/**
+ * AetherML Custom Slot
+ * Add your custom hand-coded React logic here!
+ * NOTE: The AetherML compiler will NEVER overwrite this file on subsequent builds.
+ */
+export function CustomSlot() {
+  return (
+    <div className="aether-custom-slot">
+      {/* Hand-crafted components, analytics, or third-party widgets go here */}
+    </div>
+  );
+}
+  `.trim();
+
+  // Modular plugin templates
   if (integrations.has('gsap')) {
     files['components/GsapWrapper.tsx'] = GsapWrapperCode;
   }
